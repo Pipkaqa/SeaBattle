@@ -8,16 +8,16 @@
 #include <strstream>
 #include <string>
 
-const int TABLE_SIZE = 10;
+const int MAP_SIZE = 11;
 const int MILLISECONDS_PAUSE = 500;
 
 std::vector<int> ships;
-std::map<std::string, std::string> table_marks;
+std::map<std::string, std::string> map_marks;
 
 int difficulty;
 
-int player_table[TABLE_SIZE][TABLE_SIZE];
-int enemy_table[TABLE_SIZE][TABLE_SIZE];
+int player_map[MAP_SIZE + 1][MAP_SIZE + 1];
+int enemy_map[MAP_SIZE + 1][MAP_SIZE + 1];
 
 void pre_start();
 void start();
@@ -26,13 +26,13 @@ void update();
 std::pair<bool, std::string> get_player_turn();
 std::pair<bool, std::string> get_enemy_turn();
 
-void draw_table(int table[TABLE_SIZE][TABLE_SIZE], bool ships_hidden = false);
+void draw_map(int map[MAP_SIZE + 1][MAP_SIZE + 1], bool ships_hidden = false);
 
 void choose_difficulty();
 void get_player_ships_placement();
 void generate_enemy_ships();
 
-bool check_alive(int table[TABLE_SIZE][TABLE_SIZE]);
+bool check_alive(int map[MAP_SIZE + 1][MAP_SIZE + 1]);
 
 int main()
 {
@@ -88,6 +88,25 @@ int main()
 
 void pre_start()
 {
+	int initial_code = 64;
+
+	for (int i = 0; i < MAP_SIZE; i++)
+	{
+		player_map[0][i] = (initial_code) * 100 * 1000;
+		player_map[MAP_SIZE][i] = (initial_code) * 100 * 1000;
+		player_map[i][0] = (initial_code) * 100 * 1000;
+		player_map[i][MAP_SIZE] = (initial_code) * 100 * 1000;
+
+		enemy_map[0][i] = (initial_code) * 100 * 1000;
+		enemy_map[MAP_SIZE][i] = (initial_code) * 100 * 1000;
+		enemy_map[i][0] = (initial_code) * 100 * 1000;
+		enemy_map[i][MAP_SIZE] = (initial_code) * 100 * 1000;
+
+		initial_code++;
+	}
+
+	player_map[11][11] = (initial_code) * 100 * 1000;
+
 	ships.push_back(4);
 	ships.push_back(3);
 	ships.push_back(3);
@@ -99,37 +118,37 @@ void pre_start()
 	ships.push_back(1);
 	ships.push_back(1);
 
-	table_marks.insert(std::pair<std::string, std::string>("WATER", "_"));
-	table_marks.insert(std::pair<std::string, std::string>("SHIP", "o"));
-	table_marks.insert(std::pair<std::string, std::string>("DEAD", "x"));
+	map_marks.insert(std::pair<std::string, std::string>("WATER", "_"));
+	map_marks.insert(std::pair<std::string, std::string>("SHIP", "o"));
+	map_marks.insert(std::pair<std::string, std::string>("DEAD", "x"));
 }
 
 void start()
 {
 	choose_difficulty();
-	get_player_ships_placement();
+	//get_player_ships_placement();
 }
 
 void update()
 {
 	system("cls");
 
-	draw_table(player_table);
+	draw_map(player_map);
 
 	std::cout << "\n";
 
-	if (!check_alive(enemy_table))
+	if (!check_alive(enemy_map))
 	{
-		draw_table(enemy_table);
+		draw_map(enemy_map);
 
 		std::cout << "\n";
 		std::cout << "You winner!\n";
 
 		exit(0);
 	}
-	else if (!check_alive(player_table))
+	else if (!check_alive(player_map))
 	{
-		draw_table(enemy_table);
+		draw_map(enemy_map);
 
 		std::cout << "\n";
 		std::cout << "You loser!\n";
@@ -137,7 +156,8 @@ void update()
 		exit(0);
 	}
 
-	draw_table(enemy_table, true);
+	draw_map(enemy_map);
+
 }
 
 std::pair<bool, std::string> get_player_turn()
@@ -166,9 +186,9 @@ std::pair<bool, std::string> get_player_turn()
 		break;
 	}
 
-	if (enemy_table[ship_position_y][ship_position_x] > 0)
+	if (enemy_map[ship_position_y][ship_position_x] > 0)
 	{
-		enemy_table[ship_position_y][ship_position_x] = -1;
+		enemy_map[ship_position_y][ship_position_x] = -1;
 
 		return std::pair<bool, std::string>(true, "You hit an enemy's ship!");
 	}
@@ -180,7 +200,7 @@ std::pair<bool, std::string> get_enemy_turn()
 {
 	std::random_device random_device;
 	std::mt19937 generator(random_device());
-	std::uniform_int_distribution<> distribution(1, 9);
+	std::uniform_int_distribution<> distribution(1, 10);
 
 	int attempts = difficulty;
 
@@ -189,9 +209,9 @@ std::pair<bool, std::string> get_enemy_turn()
 		int attack_position_x = distribution(generator);
 		int attack_position_y = distribution(generator);
 
-		if (player_table[attack_position_y][attack_position_x] > 0)
+		if (player_map[attack_position_y][attack_position_x] > 0)
 		{
-			player_table[attack_position_y][attack_position_x] = -1;
+			player_map[attack_position_y][attack_position_x] = -1;
 
 			return std::pair<bool, std::string>(true, "Enemy hit you ship!");
 		}
@@ -200,29 +220,37 @@ std::pair<bool, std::string> get_enemy_turn()
 	return std::pair<bool, std::string>(true, "Enemy missed!");
 }
 
-void draw_table(int table[TABLE_SIZE][TABLE_SIZE], bool ships_hidden)
+void draw_map(int map[MAP_SIZE + 1][MAP_SIZE + 1], bool ships_hidden)
 {
-	std::cout << "  A B C D E F G H I J" << std::endl;
-
 	if (ships_hidden)
 	{
-		for (int i = 0; i < TABLE_SIZE; i++)
+		for (int i = 0; i < MAP_SIZE; i++)
 		{
-			std::cout << i << " ";
-
-			for (int j = 0; j < TABLE_SIZE; j++)
+			for (int j = 0; j < MAP_SIZE; j++)
 			{
-				if (table[i][j] > 0)
+				if (!i && !j)
 				{
-					std::cout << table_marks["WATER"] << " ";
+					std::cout << "  ";
 				}
-				else if (table[i][j] < 0)
+				else if (!j)
 				{
-					std::cout << table_marks["DEAD"] << " ";
+					std::cout << i - 1 << " ";
+				}
+				else if (map[i][j] > 100 * 1000)
+				{
+					std::cout << (char)(map[i][j] / 100 / 1000) << ' ';
+				}
+				else if (map[i][j] > 0)
+				{
+					std::cout << map_marks["WATER"] << " ";
+				}
+				else if (map[i][j] < 0)
+				{
+					std::cout << map_marks["DEAD"] << " ";
 				}
 				else
 				{
-					std::cout << table_marks["WATER"] << " ";
+					std::cout << map_marks["WATER"] << " ";
 				}
 			}
 
@@ -231,23 +259,33 @@ void draw_table(int table[TABLE_SIZE][TABLE_SIZE], bool ships_hidden)
 	}
 	else
 	{
-		for (int i = 0; i < TABLE_SIZE; i++)
+		for (int i = 0; i < MAP_SIZE; i++)
 		{
-			std::cout << i << " ";
-
-			for (int j = 0; j < TABLE_SIZE; j++)
+			for (int j = 0; j < MAP_SIZE; j++)
 			{
-				if (table[i][j] > 0)
+				if (!i && !j)
 				{
-					std::cout << table_marks["SHIP"] << " ";
+					std::cout << "  ";
 				}
-				else if (table[i][j] < 0)
+				else if (!j)
 				{
-					std::cout << table_marks["DEAD"] << " ";
+					std::cout << i - 1 << " ";
+				}
+				else if (map[i][j] > 100 * 1000)
+				{
+					std::cout << (char)(map[i][j] / 100 / 1000) << ' ';
+				}
+				else if (map[i][j] > 0)
+				{
+					std::cout << map_marks["SHIP"] << " ";
+				}
+				else if (map[i][j] < 0)
+				{
+					std::cout << map_marks["DEAD"] << " ";
 				}
 				else
 				{
-					std::cout << table_marks["WATER"] << " ";
+					std::cout << map_marks["WATER"] << " ";
 				}
 			}
 
@@ -300,8 +338,8 @@ void get_player_ships_placement()
 
 	int ship_placement;
 
-	int ship_position_x;
-	int ship_position_y;
+	int x;
+	int y;
 
 	int current_ship_length;
 
@@ -321,7 +359,7 @@ void get_player_ships_placement()
 				str_helper += "x";
 			}
 
-			draw_table(player_table);
+			draw_map(player_map);
 
 			std::cout << "\n";
 			std::cout << "Place one " << str_helper << "-ship:\n";
@@ -350,7 +388,7 @@ void get_player_ships_placement()
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(MILLISECONDS_PAUSE));
 
-		int temp_table[TABLE_SIZE][TABLE_SIZE] = {};
+		int temp_table[MAP_SIZE + 1][MAP_SIZE + 1] = {};
 
 		int ship_code = 0;
 
@@ -359,7 +397,7 @@ void get_player_ships_placement()
 		while_mark_2:
 			system("cls");
 
-			draw_table(player_table);
+			draw_map(player_map);
 
 			std::cout << "\n";
 			std::cout << "Ship placement - " << ship_placement << "\n";
@@ -367,10 +405,13 @@ void get_player_ships_placement()
 
 			std::getline(std::cin, input);
 
-			ship_position_x = (int)input[0] - 65;
-			ship_position_y = (int)input[1] - 48;
+			x = (int)input[0] - 65;
+			y = (int)input[1] - 48;
 
-			if (std::empty(input) || input.length() != 2 || !isalpha(input[0]) || ship_position_x < 0 || ship_position_x > 9 || !isdigit(input[1]) || ship_position_y < 0 || ship_position_y > 9)
+			x++;
+			y++;
+
+			if (std::empty(input) || input.length() != 2 || !isalpha(input[0]) || x < 0 || x > MAP_SIZE - 1 || !isdigit(input[1]) || y < 0 || y > MAP_SIZE - 1)
 			{
 				continue;
 			}
@@ -380,11 +421,11 @@ void get_player_ships_placement()
 
 		std::cout << "\n";
 
-		for (int i = 0; i < TABLE_SIZE; i++)
+		for (int i = 0; i < MAP_SIZE + 1; i++)
 		{
-			for (int j = 0; j < TABLE_SIZE; j++)
+			for (int j = 0; j < MAP_SIZE + 1; j++)
 			{
-				temp_table[i][j] = player_table[i][j];
+				temp_table[i][j] = player_map[i][j];
 			}
 		}
 
@@ -392,60 +433,54 @@ void get_player_ships_placement()
 		{
 			for (int i = 0; i < current_ship_length; i++)
 			{
-				if (temp_table[ship_position_y][ship_position_x + i] != 0 && temp_table[ship_position_y][ship_position_x + i] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + 1][ship_position_x + i + 1] != 0 && temp_table[ship_position_y + 1][ship_position_x + i + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + 1][ship_position_x + i] != 0 && temp_table[ship_position_y + 1][ship_position_x + i] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y - 1][ship_position_x + i] != 0 && temp_table[ship_position_y - 1][ship_position_x + i] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y - 1][ship_position_x + i - 1] != 0 && temp_table[ship_position_y - 1][ship_position_x + i - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y - 1][ship_position_x + i + 1] != 0 && temp_table[ship_position_y - 1][ship_position_x + i + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y][ship_position_x + i + 1] != 0 && temp_table[ship_position_y][ship_position_x + i + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y][ship_position_x + i - 1] != 0 && temp_table[ship_position_y][ship_position_x + i - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + 1][ship_position_x + i - 1] != 0 && temp_table[ship_position_y + 1][ship_position_x + i - 1] != current_ship_length * 2 + ship_code)
+				for (int j = y - 1; j < y + 2; j++)
 				{
-					std::cout << "Incorrect coordinates!\n";
+					for (int k = x - 1; k < x + 2; k++)
+					{
+						if (temp_table[j][k + i] != 0 && temp_table[j][k + i] != current_ship_length * 2 + ship_code && temp_table[j][k + i] < 100 * 1000)
+						{
+							std::cout << "Incorrect coordinates!\n";
 
-					std::this_thread::sleep_for(std::chrono::milliseconds(MILLISECONDS_PAUSE));
+							std::this_thread::sleep_for(std::chrono::milliseconds(MILLISECONDS_PAUSE));
 
-					goto while_mark_2;
+							goto while_mark_2;
+						}
+					}
 				}
 
-				temp_table[ship_position_y][ship_position_x + i] = current_ship_length * 2 + ship_code;
+				temp_table[y][x + i] = current_ship_length * 2 + ship_code;
 			}
-
-			ship_code++;
 		}
 		else
 		{
 			for (int i = 0; i < current_ship_length; i++)
 			{
-				if (temp_table[ship_position_y + i][ship_position_x] != 0 && temp_table[ship_position_y + i][ship_position_x] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i + 1][ship_position_x + 1] != 0 && temp_table[ship_position_y + i + 1][ship_position_x + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i + 1][ship_position_x] != 0 && temp_table[ship_position_y + i + 1][ship_position_x] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i - 1][ship_position_x] != 0 && temp_table[ship_position_y + i - 1][ship_position_x] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i - 1][ship_position_x - 1] != 0 && temp_table[ship_position_y + i - 1][ship_position_x - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i - 1][ship_position_x + 1] != 0 && temp_table[ship_position_y + i - 1][ship_position_x + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i][ship_position_x + 1] != 0 && temp_table[ship_position_y + i][ship_position_x + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i][ship_position_x - 1] != 0 && temp_table[ship_position_y + i][ship_position_x - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i + 1][ship_position_x - 1] != 0 && temp_table[ship_position_y + i + 1][ship_position_x - 1] != current_ship_length * 2 + ship_code)
+				for (int j = y - 1; j < y + 2; j++)
 				{
-					std::cout << "Incorrect coordinates!\n";
+					for (int k = x - 1; k < x + 2; k++)
+					{
+						if (temp_table[j + i][k] != 0 && temp_table[j + i][k] != current_ship_length * 2 + ship_code && temp_table[j + i][k] < 100 * 1000)
+						{
+							std::cout << "Incorrect coordinates!\n";
 
-					std::this_thread::sleep_for(std::chrono::milliseconds(MILLISECONDS_PAUSE));
+							std::this_thread::sleep_for(std::chrono::milliseconds(MILLISECONDS_PAUSE));
 
-					goto while_mark_2;
+							goto while_mark_2;
+						}
+					}
 				}
 
-				temp_table[ship_position_y + i][ship_position_x] = current_ship_length * 2 + ship_code;
+				temp_table[y + i][x] = current_ship_length * 2 + ship_code;
 			}
-
-			ship_code++;
 		}
 
-		for (int i = 0; i < TABLE_SIZE; i++)
+		ship_code++;
+
+		for (int i = 0; i < MAP_SIZE + 1; i++)
 		{
-			for (int j = 0; j < TABLE_SIZE; j++)
+			for (int j = 0; j < MAP_SIZE + 1; j++)
 			{
-				player_table[i][j] = temp_table[i][j];
+				player_map[i][j] = temp_table[i][j];
 			}
 		}
 	}
@@ -458,8 +493,8 @@ void generate_enemy_ships()
 
 	int ship_placement;
 
-	int ship_position_x;
-	int ship_position_y;
+	int x;
+	int y;
 
 	int current_ship_length;
 
@@ -471,26 +506,26 @@ void generate_enemy_ships()
 
 		ship_placement = distribution(generator);
 
-		int temp_table[TABLE_SIZE][TABLE_SIZE] = {};
+		int temp_table[MAP_SIZE + 1][MAP_SIZE + 1] = {};
 
 		int ship_code = 0;
 
 		while (true)
 		{
 		while_mark:
-			std::uniform_int_distribution<> dis(1, 9);
+			std::uniform_int_distribution<> dis(1, 10);
 
-			ship_position_x = dis(generator);
-			ship_position_y = dis(generator);
+			x = dis(generator);
+			y = dis(generator);
 
 			break;
 		}
 
-		for (int i = 0; i < TABLE_SIZE; i++)
+		for (int i = 0; i < MAP_SIZE + 1; i++)
 		{
-			for (int j = 0; j < TABLE_SIZE; j++)
+			for (int j = 0; j < MAP_SIZE + 1; j++)
 			{
-				temp_table[i][j] = enemy_table[i][j];
+				temp_table[i][j] = enemy_map[i][j];
 			}
 		}
 
@@ -498,62 +533,58 @@ void generate_enemy_ships()
 		{
 			for (int i = 0; i < current_ship_length; i++)
 			{
-				if (temp_table[ship_position_y][ship_position_x + i] != 0 && temp_table[ship_position_y][ship_position_x + i] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + 1][ship_position_x + i + 1] != 0 && temp_table[ship_position_y + 1][ship_position_x + i + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + 1][ship_position_x + i] != 0 && temp_table[ship_position_y + 1][ship_position_x + i] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y - 1][ship_position_x + i] != 0 && temp_table[ship_position_y - 1][ship_position_x + i] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y - 1][ship_position_x + i - 1] != 0 && temp_table[ship_position_y - 1][ship_position_x + i - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y - 1][ship_position_x + i + 1] != 0 && temp_table[ship_position_y - 1][ship_position_x + i + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y][ship_position_x + i + 1] != 0 && temp_table[ship_position_y][ship_position_x + i + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y][ship_position_x + i - 1] != 0 && temp_table[ship_position_y][ship_position_x + i - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + 1][ship_position_x + i - 1] != 0 && temp_table[ship_position_y + 1][ship_position_x + i - 1] != current_ship_length * 2 + ship_code)
+				for (int j = y - 1; j < y + 2; j++)
 				{
-					goto while_mark;
+					for (int k = x - 1; k < x + 2; k++)
+					{
+						if (temp_table[j][k + i] != 0 && temp_table[j][k + i] != current_ship_length * 2 + ship_code && temp_table[j][k + i] < 100 * 1000)
+						{
+							goto while_mark;
+						}
+					}
 				}
 
-				temp_table[ship_position_y][ship_position_x + i] = current_ship_length * 2 + ship_code;
+				temp_table[y][x + i] = current_ship_length * 2 + ship_code;
 			}
-
-			ship_code++;
 		}
 		else
 		{
 			for (int i = 0; i < current_ship_length; i++)
 			{
-				if (temp_table[ship_position_y + i][ship_position_x] != 0 && temp_table[ship_position_y + i][ship_position_x] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i + 1][ship_position_x + 1] != 0 && temp_table[ship_position_y + i + 1][ship_position_x + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i + 1][ship_position_x] != 0 && temp_table[ship_position_y + i + 1][ship_position_x] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i - 1][ship_position_x] != 0 && temp_table[ship_position_y + i - 1][ship_position_x] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i - 1][ship_position_x - 1] != 0 && temp_table[ship_position_y + i - 1][ship_position_x - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i - 1][ship_position_x + 1] != 0 && temp_table[ship_position_y + i - 1][ship_position_x + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i][ship_position_x + 1] != 0 && temp_table[ship_position_y + i][ship_position_x + 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i][ship_position_x - 1] != 0 && temp_table[ship_position_y + i][ship_position_x - 1] != current_ship_length * 2 + ship_code ||
-					temp_table[ship_position_y + i + 1][ship_position_x - 1] != 0 && temp_table[ship_position_y + i + 1][ship_position_x - 1] != current_ship_length * 2 + ship_code)
+				for (int j = y - 1; j < y + 2; j++)
 				{
-					goto while_mark;
+					for (int k = x - 1; k < x + 2; k++)
+					{
+						if (temp_table[j + i][k] != 0 && temp_table[j + i][k] != current_ship_length * 2 + ship_code && temp_table[j + i][k] < 100 * 1000)
+						{
+							goto while_mark;
+						}
+					}
 				}
 
-				temp_table[ship_position_y + i][ship_position_x] = current_ship_length * 2 + ship_code;
+				temp_table[y + i][x] = current_ship_length * 2 + ship_code;
 			}
-
-			ship_code++;
 		}
 
-		for (int i = 0; i < TABLE_SIZE; i++)
+		ship_code++;
+
+		for (int i = 0; i < MAP_SIZE + 1; i++)
 		{
-			for (int j = 0; j < TABLE_SIZE; j++)
+			for (int j = 0; j < MAP_SIZE + 1; j++)
 			{
-				enemy_table[i][j] = temp_table[i][j];
+				enemy_map[i][j] = temp_table[i][j];
 			}
 		}
 	}
 }
 
-bool check_alive(int table[TABLE_SIZE][TABLE_SIZE])
+bool check_alive(int table[MAP_SIZE + 1][MAP_SIZE + 1])
 {
-	for (int i = 0; i < TABLE_SIZE; i++)
+	return true;
+
+	for (int i = 0; i < MAP_SIZE; i++)
 	{
-		for (int j = 0; j < TABLE_SIZE; j++)
+		for (int j = 0; j < MAP_SIZE; j++)
 		{
 			if (table[i][j] > 0)
 			{
