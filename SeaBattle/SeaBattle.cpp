@@ -126,7 +126,7 @@ void pre_start()
 void start()
 {
 	choose_difficulty();
-	//get_player_ships_placement();
+	get_player_ships_placement();
 }
 
 void update()
